@@ -400,7 +400,9 @@ export class Storage extends Service {
 
                     for (let byteIndex = 0; byteIndex < Client.DENO_READ_CHUNK_SIZE; byteIndex++) {
                         totalBuffer[(blockIndex * Client.DENO_READ_CHUNK_SIZE) + byteIndex] = buf[byteIndex];
-                        lastBufferIndex = (blockIndex * Client.DENO_READ_CHUNK_SIZE) + byteIndex;
+                        if(buf[byteIndex] !== 0) {
+                            lastBufferIndex = (blockIndex * Client.DENO_READ_CHUNK_SIZE) + byteIndex;
+                        }
                     }
                 }
 
