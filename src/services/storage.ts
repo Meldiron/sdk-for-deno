@@ -319,7 +319,7 @@ export class Storage extends Service {
      * @throws {AppwriteException}
      * @returns {Promise}
      */
-     async createFile(bucketId: string, fileId: string, file: string, read?: string[], write?: string[], onProgress = (progress: UploadProgress) => {}): Promise<Models.File> {
+    async createFile(bucketId: string, fileId: string, file: string, read?: string[], write?: string[], onProgress = (progress: UploadProgress) => {}): Promise<Models.File> {
         if (typeof bucketId === 'undefined') {
             throw new AppwriteException('Missing required parameter: "bucketId"');
         }
@@ -387,7 +387,7 @@ export class Storage extends Service {
                 }
                 
                 let totalBuffer = new Uint8Array(Client.CHUNK_SIZE);
-                let lastBufferIndex = -1;
+                let usedBufferSize = 0;
 
                 for (let blockIndex = 0; blockIndex < Client.CHUNK_SIZE / Client.DENO_READ_CHUNK_SIZE; blockIndex++) {
                     const buf = new Uint8Array(Client.DENO_READ_CHUNK_SIZE);
@@ -400,18 +400,13 @@ export class Storage extends Service {
 
                     for (let byteIndex = 0; byteIndex < Client.DENO_READ_CHUNK_SIZE; byteIndex++) {
                         totalBuffer[(blockIndex * Client.DENO_READ_CHUNK_SIZE) + byteIndex] = buf[byteIndex];
-                        lastBufferIndex = (blockIndex * Client.DENO_READ_CHUNK_SIZE) + byteIndex;
+                        usedBufferSize = (blockIndex * Client.DENO_READ_CHUNK_SIZE) + byteIndex + 1;
                     }
                 }
 
-                if(lastBufferIndex !== -1) {
-                    const newTotalBuffer = new Uint8Array(lastBufferIndex + 1);
-                    for(let index = 0; index <= lastBufferIndex; index++) {
-                        newTotalBuffer[index] = totalBuffer[index];
-                    }
-                    totalBuffer = newTotalBuffer;
-                }
-                
+                // Shrink 0-bytes
+                totalBuffer = new Uint8Array(totalBuffer.buffer, 0, size) 
+
                 payload['file'] = new File([totalBuffer], basename(file));
 
                 response = await this.client.call('post', path, headers, payload);
