@@ -319,7 +319,7 @@ export class Storage extends Service {
      * @throws {AppwriteException}
      * @returns {Promise}
      */
-    async createFile(bucketId: string, fileId: string, file: string, read?: string[], write?: string[], onProgress = (progress: UploadProgress) => {}): Promise<Models.File> {
+     async createFile(bucketId: string, fileId: string, file: string, read?: string[], write?: string[], onProgress = (progress: UploadProgress) => {}): Promise<Models.File> {
         if (typeof bucketId === 'undefined') {
             throw new AppwriteException('Missing required parameter: "bucketId"');
         }
@@ -386,7 +386,8 @@ export class Storage extends Service {
                     headers['x-appwrite-id'] = id;
                 }
                 
-                const totalBuffer = new Uint8Array(Client.CHUNK_SIZE);
+                let totalBuffer = new Uint8Array(Client.CHUNK_SIZE);
+                let lastBufferIndex = -1;
 
                 for (let blockIndex = 0; blockIndex < Client.CHUNK_SIZE / Client.DENO_READ_CHUNK_SIZE; blockIndex++) {
                     const buf = new Uint8Array(Client.DENO_READ_CHUNK_SIZE);
@@ -399,7 +400,16 @@ export class Storage extends Service {
 
                     for (let byteIndex = 0; byteIndex < Client.DENO_READ_CHUNK_SIZE; byteIndex++) {
                         totalBuffer[(blockIndex * Client.DENO_READ_CHUNK_SIZE) + byteIndex] = buf[byteIndex];
+                        lastBufferIndex = (blockIndex * Client.DENO_READ_CHUNK_SIZE) + byteIndex;
                     }
+                }
+
+                if(lastBufferIndex !== -1) {
+                    const newTotalBuffer = new Uint8Array(lastBufferIndex + 1);
+                    for(let index = 0; index <= lastBufferIndex; index++) {
+                        newTotalBuffer[index] = totalBuffer[index];
+                    }
+                    totalBuffer = newTotalBuffer;
                 }
                 
                 payload['file'] = new File([totalBuffer], basename(file));
