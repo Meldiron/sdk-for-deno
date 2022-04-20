@@ -387,7 +387,6 @@ export class Storage extends Service {
                 }
                 
                 let totalBuffer = new Uint8Array(Client.CHUNK_SIZE);
-                let usedBufferSize = 0;
 
                 for (let blockIndex = 0; blockIndex < Client.CHUNK_SIZE / Client.DENO_READ_CHUNK_SIZE; blockIndex++) {
                     const buf = new Uint8Array(Client.DENO_READ_CHUNK_SIZE);
@@ -400,12 +399,11 @@ export class Storage extends Service {
 
                     for (let byteIndex = 0; byteIndex < Client.DENO_READ_CHUNK_SIZE; byteIndex++) {
                         totalBuffer[(blockIndex * Client.DENO_READ_CHUNK_SIZE) + byteIndex] = buf[byteIndex];
-                        usedBufferSize = (blockIndex * Client.DENO_READ_CHUNK_SIZE) + byteIndex + 1;
                     }
                 }
 
-                // Shrink 0-bytes
-                totalBuffer = new Uint8Array(totalBuffer.buffer, 0, size) 
+                // Shrink empty bytes
+                totalBuffer = new Uint8Array(totalBuffer.buffer, 0) 
 
                 payload['file'] = new File([totalBuffer], basename(file));
 
